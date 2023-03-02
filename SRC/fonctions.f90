@@ -74,23 +74,3 @@ ENDIF
 
 
 END FUNCTION GetMaskMB
-
-FUNCTION WeertmanCoef(Model, n, f) RESULT(g)
-USE DefUtils
-IMPLICIT NONE
-TYPE(Model_t) :: Model
-INTEGER :: n
-REAL(KIND=dp) :: f, g
-
-if (f<1.0) then
-	g=0.0464
-else
-	g=0.0342
-endif
-
-write (*,*) g
-
-END FUNCTION WeertmanCoef
-
-
-
