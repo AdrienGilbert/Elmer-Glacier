@@ -124,8 +124,6 @@ Initial Condition 2
   Zs= Equals SurfDEM     
   Ref Zs = Equals SurfDEM       
   IcyMask = Real 1.0
-  MaskMB = Variable Coordinate 1
-   real procedure "bin/fonctions" "GetMaskMB"
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -343,11 +341,10 @@ Solver 8
   Variable = -nooutput "savescal"
 
   File Name = File "GlacierOut/RunRefSafran.dat"
-      
+  
+  !Coordinate of the reference point for front distance variable
   XRefFrontPosition = real 9.552320e+05
   YRefFrontPosition = real 1.196998e+05
-  
-  Exported Variable 1 = "MaskMB"
 
 End
 
