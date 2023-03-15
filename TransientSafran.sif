@@ -80,7 +80,7 @@ Simulation
   BDF Order = 2
 
   Timestep Intervals(1) = #duration * steps_per_year
-  Output Intervals(1) = 1!#steps_per_year
+  Output Intervals(1) = 1 !#steps_per_year
   Timestep Sizes(1) = #dt 
 
   Steady State Max Iterations = 1
@@ -163,7 +163,8 @@ Material 1
 
   Min Zs = Variable BedDEM
     Real LUA "tx[0]+ MinH"
-  Max Zs = real 4000.0
+  Max Zs =  Variable Coordinate 3
+    Real LUA "tx[0]+ 20.0"
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -230,7 +231,7 @@ Solver 4
 
   !Non-linear iteration settings:
   Nonlinear System Max Iterations = 50
-  Nonlinear System Convergence Tolerance  = 1.0e-5
+  Nonlinear System Convergence Tolerance  = 1.0e-3
   Nonlinear System Newton After Iterations = 5
   Nonlinear System Newton After Tolerance = 1.0e-2
   Nonlinear System Reset Newton = Logical True
@@ -295,7 +296,7 @@ Solver 7
   Variable = -dofs 1 "Zs"
   Procedure = "FreeSurfaceSolver" "FreeSurfaceSolver"
   
-  Stabilization Method = Bubbles
+  Stabilization Method = Stabilized
   
   ! calculate dz/dt 
   Calculate Velocity = Logical True
@@ -316,7 +317,7 @@ Solver 7
   ! non-linear system settings
   Nonlinear System Max Iterations = 100 ! variational inequality needs more than one round
   Nonlinear System Min Iterations = 2
-  Nonlinear System Convergence Tolerance = 1.0e-8
+  Nonlinear System Convergence Tolerance = 1.0e-6
 
   ! convergence on timelevel
   Steady State Convergence Tolerance = 1.0e-4
