@@ -302,7 +302,6 @@ Solver 7
 
   ! apply internal limiters
   Apply Dirichlet = Logical true
-  ! Maximum Displacement = real 10.0
   
   ! linear systeme settings
   Linear System Solver = Iterative
