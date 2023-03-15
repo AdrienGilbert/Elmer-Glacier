@@ -1,0 +1,21 @@
+File started at: 2023/03/15 14:58:53
+ 
+Elmer version: 9.0
+Elmer revision: unknown
+Elmer Compilation Date: 2023-03-01
+ 
+Variables in columns of matrix:GlacierOut/RunRefSafran.dat
+   1: Time
+   2: Volume
+   3: Volume Change
+   4: Area
+   5: Ablation Area
+   6: Accumulation Area
+   7: SMB Total
+   8: SMB Ablation
+   9: SMB Accumulation
+  10: Residual Flux
+  11: Front Elevation
+  12: X Front
+  13: Y Front
+  14: Front Distance

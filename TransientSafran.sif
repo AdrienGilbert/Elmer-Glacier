@@ -23,7 +23,7 @@ include "Parameters/Physical_Parameters.IN"
 
 #Startyear = 1998.0
 #duration = 23
-#steps_per_year = 20       !Number of step per year 
+#steps_per_year = 10       !Number of step per year 
 #dt = 1.0/steps_per_year   !Timestep size (in year)
 
 Constants
@@ -163,8 +163,7 @@ Material 1
 
   Min Zs = Variable BedDEM
     Real LUA "tx[0]+ MinH"
-  Max Zs = Variable Coordinate 3
-    Real LUA "tx[0]+ 20.0" 
+  Max Zs = real 4000.0
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -295,13 +294,16 @@ Solver 7
   Equation =  String "Free Surface Evolution"
   Variable = -dofs 1 "Zs"
   Procedure = "FreeSurfaceSolver" "FreeSurfaceSolver"
-
+  
+  Stabilization Method = Bubbles
+  
   ! calculate dz/dt 
   Calculate Velocity = Logical True
 
   ! apply internal limiters
   Apply Dirichlet = Logical true
-
+  ! Maximum Displacement = real 10.0
+  
   ! linear systeme settings
   Linear System Solver = Iterative
   Linear System Iterative Method = BiCGStab
@@ -309,20 +311,17 @@ Solver 7
   Linear System Preconditioning = ILU1
   Linear System Convergence Tolerance = 1.0e-08
   
-    !Linear system settings 
   Linear System Solver = Direct         
   Linear System Direct Method = "MUMPS"
 
   ! non-linear system settings
   Nonlinear System Max Iterations = 100 ! variational inequality needs more than one round
   Nonlinear System Min Iterations = 2
-  Nonlinear System Convergence Tolerance = 1.0e-8 
+  Nonlinear System Convergence Tolerance = 1.0e-8
 
   ! convergence on timelevel
   Steady State Convergence Tolerance = 1.0e-4
-
-  Stabilization Method = Stabilized
-
+    
   ! loads also takes into account dirichlet conditions to compute residual flux
   calculate loads = Logical True
 
@@ -404,4 +403,5 @@ End
 Boundary Condition 3
   Name = "upper surface"
   Body Id = 2
+  Top Surface = Equals Zs
 End
