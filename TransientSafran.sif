@@ -164,7 +164,7 @@ Material 1
   Min Zs = Variable BedDEM
     Real LUA "tx[0]+ MinH"
   Max Zs =  Variable Coordinate 3
-    Real LUA "tx[0]+ 20.0"
+    Real LUA "tx[0]+ 18.0"
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -385,6 +385,12 @@ Boundary Condition 1
   Mass Consistent Normals = Logical True
   Normal-Tangential Velocity = Logical True  
   Velocity 1 = Real 0.0e0  
+  
+  Zs = Variable BedDEM
+    Real LUA "tx[0]+ MinH"
+  ! should make it also dependant of SMB, i.E. allow zs to change if SMB>0
+  Zs Condition = Variable "IcyMask","Mass Balance" 
+    Real LUA "IfThenElse((tx[0]< -0.5) and (tx[1]<=0.0), 1.0, -1.0)" 
 End
 
 ! Bedrock 
