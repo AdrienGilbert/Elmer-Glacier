@@ -56,9 +56,9 @@ Constants
   RadFact = real 0.7        ! Ice Radiation factor correction
   Albedo_snow = real 0.6   ! Snow albedo
   Albedo_ice = real 0.3     ! Ice Albedo
-  ksnow = real 10.0     	! Energy input for snow per degree (W/m2 K-1)
+  ksnow = real 7.0     	! Energy input for snow per degree (W/m2 K-1)
   kice = real 10.0     	! Energy input for ice per degree (W/m2 K-1)
-  k0 = real -67.0			! Energy balance at 0°C (W/m2) 
+  k0 = real -64.0			! Energy balance at 0°C (W/m2) 
   
   
   seuil_precip = real 1.0  ! Threshold temperature for snow/rain transition
