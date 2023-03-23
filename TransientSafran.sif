@@ -121,8 +121,8 @@ Initial Condition 1
 End
 
 Initial Condition 2
-  Zs= Equals SurfDEM     
-  Ref Zs = Equals SurfDEM       
+  Zs Top = Equals SurfDEM     
+  Ref Zs Top = Equals SurfDEM       
   IcyMask = Real 1.0
 End
 
@@ -134,9 +134,9 @@ Body Force 1
 End
 
 Body Force 2
-  Zs Accumulation Flux 1 = real 0.0
-  Zs Accumulation Flux 2 = real 0.0
-  Zs Accumulation Flux 3 = Equals "Mass Balance" 
+  Zs Top Accumulation Flux 1 = real 0.0
+  Zs Top Accumulation Flux 2 = real 0.0
+  Zs Top Accumulation Flux 3 = Equals "Mass Balance" 
 
 ! surface slope norm
   slope = Variable "SurfGrad 1", "SurfGrad 2"
@@ -161,9 +161,9 @@ Material 1
   Limit Temperature = Real -10.0
   Relative Temperature = Real 0.0
 
-  Min Zs = Variable BedDEM
+  Min Zs Top = Variable BedDEM
     Real LUA "tx[0]+ MinH"
-  Max Zs =  Variable Coordinate 3
+  Max Zs Top =  Variable Coordinate 3
     Real LUA "tx[0]+ 18.0"
 End
 
@@ -179,7 +179,7 @@ Solver 1
   Mesh Velocity Variable = String "dSdt"
   Mesh Update Variable = String "dS"
   Mesh Velocity First Zero = Logical True
-  Top Surface Variable Name = String "Zs"
+  Top Surface Variable Name = String "Zs Top"
   Bottom Surface Variable Name = String "BedDEM"
   Displacement Mode = Logical False
   Correct Surface = Logical True
@@ -261,7 +261,7 @@ Solver 5
   Equation = "Surface Slope"
   Procedure = File "bin/Compute2DNodalGradient" "Compute2DNodalGradient"
   Variable = -dofs 2 "SurfGrad"
-  Variable Name = String "zs"
+  Variable Name = String "Zs Top"
   Update Exported Variables = Logical True
   Exported Variable 1 = "slope"
 End
@@ -293,7 +293,7 @@ End
 Solver 7
   !Exec Solver = "Never" 
   Equation =  String "Free Surface Evolution"
-  Variable = -dofs 1 "Zs"
+  Variable = -dofs 1 "Zs Top"
   Procedure = "FreeSurfaceSolver" "FreeSurfaceSolver"
   
   Stabilization Method = Stabilized
@@ -325,8 +325,8 @@ Solver 7
   ! loads also takes into account dirichlet conditions to compute residual flux
   calculate loads = Logical True
 
-  Exported Variable 1 = -nooutput "Zs Residual"
-  Exported Variable 2 = "Ref Zs"
+  Exported Variable 1 = -nooutput "Zs Top Residual"
+  Exported Variable 2 = "Ref Zs Top"
 End
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -388,10 +388,10 @@ Boundary Condition 1
   Normal-Tangential Velocity = Logical True  
   Velocity 1 = Real 0.0e0  
   
-  Zs = Variable BedDEM
+  Zs Top = Variable BedDEM
     Real LUA "tx[0]+ MinH"
   ! should make it also dependant of SMB, i.E. allow zs to change if SMB>0
-  Zs Condition = Variable "IcyMask","Mass Balance" 
+  Zs Top Condition = Variable "IcyMask","Mass Balance" 
     Real LUA "IfThenElse((tx[0]< -0.5) and (tx[1]<=0.0), 1.0, -1.0)" 
 End
 
@@ -411,5 +411,5 @@ End
 Boundary Condition 3
   Name = "upper surface"
   Body Id = 2
-  Top Surface = Equals Zs
+  Top Surface = Equals Zs Top
 End
