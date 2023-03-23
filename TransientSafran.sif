@@ -345,6 +345,8 @@ Solver 8
   XRefFrontPosition = real 9.552320e+05
   YRefFrontPosition = real 1.196998e+05
 
+  SMB altitude Range (2) = real 1600.0 3600.0  ! Return SMB and area per elevation band every 200m within the given range
+
 End
 
 Solver 9
