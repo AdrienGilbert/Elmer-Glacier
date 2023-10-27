@@ -172,8 +172,6 @@ IF (first_time) THEN
 		nyDEM=nyDEM+1
 	ENDDO
 		
-		
-	nyDEM=nb_line/nxDEM
 	
 	IF (nxDEM==1) THEN
 		nxDEM=nb_line/nyDEM
@@ -229,12 +227,7 @@ IF (first_time) THEN
   END DO
   CLOSE(1)
   
-  	nx=1
-	DO WHILE (Mask_l(nx,2)==Mask_l(nx+1,2))
-		nx=nx+1
-	ENDDO
-	ny=nb_line/nx
-	
+
 	nx=1
 	DO WHILE (Mask_l(nx,2)==Mask_l(nx+1,2))
 		nx=nx+1
@@ -245,8 +238,7 @@ IF (first_time) THEN
 		ny=ny+1
 	ENDDO
 		
-		
-	ny=nb_line/nx
+
 	
 	IF (nx==1) THEN
 		nx=nb_line/ny
