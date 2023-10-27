@@ -13,7 +13,7 @@ TYPE(Element_t),POINTER :: Element
 TYPE(ValueList_t), POINTER :: SolverParams
 INTEGER, POINTER :: NodeIndexes(:)
 
-INTEGER :: n,i,j,k,cont,nb_surf,nb_vert,io,nb_day,it,day,YearDay,nb_jour,first_day,nb_line,i1,i2
+INTEGER :: n,i,j,k,cont,nb_surf,nb_vert,io,nb_day,it,day,YearDay,nb_jour,first_day,nb_line,i1,i2,nx,ny
 
 REAL(KIND=dp) :: f, z, deg_pos,accu,melt_local, temp_10m,rain,t_simu,ksnow,kice,k0,T,dt
 REAL(KIND=dp) :: z_precip,grad_accu,grad,z_temp,seuil_precip,albedo_snow,albedo_ice,Rad_fact,alpha
@@ -21,14 +21,13 @@ REAL(KIND=dp) :: Pfact,temp_correc,firn_param,precip_correc,sigma,melt
 
 REAL(KIND=dp) :: Sr,rho_w,rho_ice,L_heat,T0,g1,g2,g3,Mean_Temp_Air,x_output,y_output
 
-REAL(KIND=dp) :: DEMReliefRes,zDEM,x_ray,y_ray,z_ray
+REAL(KIND=dp) :: DEMReliefRes,zDEM,x_ray,y_ray,z_ray,MaskRes
 
 REAL(KIND=dp) :: fx,fy,slop,asp,S0,dr,lat,L,term1,term2,term3,tau_r,tau_d,tau_b,srad,sinAlpha,R,M,Is
 REAL(KIND=dp) :: Ir,Iday,I0,hsr,hs,cos_i,dS,Idiff,reflec,Norm,year,x,y,yearstartdata,precip_fact,MinAltFact,MaxAltFact
 
 REAL(KIND=dp), DIMENSION(:,:),allocatable :: Mask_l,DEMRelief_l,PotRadNodes
-REAL(KIND=dp), DIMENSION(190,223,3) :: Mask
-REAL(KIND=dp), DIMENSION(109,90,3) :: DEMRelief
+REAL(KIND=dp), DIMENSION(:,:,:),allocatable ::Mask,DEMRelief
 
 REAL(KIND=dp), DIMENSION(:),allocatable :: TempAirMoy,Precip,FirnNodes,MaskAccu
 
@@ -162,10 +161,18 @@ IF (first_time) THEN
       READ(1,*) DEMRelief_l(i,1),DEMRelief_l(i,2),DEMRelief_l(i,3)
     END DO
     CLOSE(1)
+	
+	nx=1
+	DO WHILE (DEMRelief_l(nx,2)==DEMRelief_l(nx+1,2))
+		nx=nx+1
+	ENDDO
+	ny=nb_line/nx
+	
+	ALLOCATE(DEMRelief(ny,nx,3))
 
     cont=0
-    DO i=1,109
-      DO j=1,90
+    DO i=1,ny
+      DO j=1,nx
         cont=cont+1
         DEMRelief(i,j,1)=DEMRelief_l(cont,1)
         DEMRelief(i,j,2)=DEMRelief_l(cont,2)
@@ -196,10 +203,18 @@ IF (first_time) THEN
     READ(1,*) Mask_l(i,1),Mask_l(i,2),Mask_l(i,3)
   END DO
   CLOSE(1)
+  
+  	nx=1
+	DO WHILE (Mask_l(nx,2)==Mask_l(nx+1,2))
+		nx=nx+1
+	ENDDO
+	ny=nb_line/nx
+	
+	ALLOCATE(Mask(ny,nx,3))
 
   cont=0
-  DO i=1,190
-    DO j=1,223
+  DO i=1,ny
+    DO j=1,nx
       cont=cont+1
 
       Mask(i,j,1)=Mask_l(cont,1)
@@ -207,13 +222,15 @@ IF (first_time) THEN
       Mask(i,j,3)=Mask_l(cont,3)
     END DO
   END DO
+  
+  MaskRes=abs(Mask(1,1,1)-Mask(1,2,1))
 
   DO n=1,model % NumberOfNodes
     x = model % nodes % x (n)
     y = model % nodes % y (n)
 
-    k=floor((x-Mask(1,1,1))/40)+1
-    j=floor((y-Mask(1,1,2))/40)+1
+    k=floor((x-Mask(1,1,1))/MaskRes)+1
+    j=floor((y-Mask(1,1,2))/MaskRes)+1
 
     IF ((j<=1).or.(j>=190).or.(k<=1).or.(k>=223)) THEN
       MaskAccu(n)=1.0
@@ -222,7 +239,7 @@ IF (first_time) THEN
       &*(Mask(j+1,k,2)-y)+Mask(j+1,k,3)*(Mask(j,k+1,1)-x)*(y-Mask(j,k,2))+Mask(j+1,k+1,3)*&
       &(x-Mask(j,k,1))*(y-Mask(j,k,2))
 
-      MaskAccu(n)=MaskAccu(n)/40/40
+      MaskAccu(n)=MaskAccu(n)/MaskRes/MaskRes
     END IF
   END DO
   
