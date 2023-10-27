@@ -5,6 +5,7 @@
 #rhoi = rhoikg/(1.0e6*yearinsec^2)   
 #rhow = rhowkg/(1.0e6*yearinsec^2) 
 #gravity = -9.81*yearinsec^2
+#LHeat = 334000.0
 
 ! Prefactor from Cuffey and Paterson (2010) in MPa^{-3} a^{-1}
 #A1 = 2.89165e-13*yearinsec*1.0e18 

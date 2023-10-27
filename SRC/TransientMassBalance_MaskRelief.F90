@@ -388,9 +388,9 @@ IF (Execute_steady) THEN
 			precip_fact=min(precip_fact,MaxAltFact)
 			
 			IF (FirnNodes(n)>0.0) THEN
-				melt=(T*ksnow+k0+(1.0-Albedo_snow)*Rad_fact*PotRadNodes(i1,n))*24.0*3600.0/334000.0/1000.0
+				melt=(T*ksnow+k0+(1.0-Albedo_snow)*Rad_fact*PotRadNodes(i1,n))*24.0*3600.0/L_heat/rho_w
 			ELSE
-				melt=(T*kice+k0+(1.0-Albedo_ice)*Rad_fact*PotRadNodes(i1,n))*24.0*3600.0/334000.0/1000.0
+				melt=(T*kice+k0+(1.0-Albedo_ice)*Rad_fact*PotRadNodes(i1,n))*24.0*3600.0/L_heat/rho_w
 			END IF
 			
 			IF (melt<0) melt=0.0
@@ -493,9 +493,9 @@ IF (first_day<1) call FATAL('Mass balance Solver','Simulation starts before data
         precip_fact=min(precip_fact,MaxAltFact)
 
 		IF (FirnNodes(n)>0.0) THEN
-			melt=(T*ksnow+k0+(1.0-Albedo_snow)*Rad_fact*PotRadNodes(i1,n))*24.0*3600.0/334000.0/1000.0
+			melt=(T*ksnow+k0+(1.0-Albedo_snow)*Rad_fact*PotRadNodes(i1,n))*24.0*3600.0/L_heat/rho_w
 		ELSE
-			melt=(T*kice+k0+(1.0-Albedo_ice)*Rad_fact*PotRadNodes(i1,n))*24.0*3600.0/334000.0/1000.0
+			melt=(T*kice+k0+(1.0-Albedo_ice)*Rad_fact*PotRadNodes(i1,n))*24.0*3600.0/L_heat/rho_w
 		END IF
 
         IF (melt<0) melt=0.0
@@ -611,6 +611,7 @@ CONTAINS
 
   rho_w=GetConstReal(Model % Constants, "Water Density")
   rho_ice=GetConstReal(Model % Constants, "Ice Density")
+  L_heat=GetConstReal(Model % Constants, "L_heat")
 
   IF (PrecipData) THEN
     precip_correc=GetConstReal(Model % Constants, "PrecipCorrec",GotIt)
