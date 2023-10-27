@@ -13,7 +13,7 @@ TYPE(Element_t),POINTER :: Element
 TYPE(ValueList_t), POINTER :: SolverParams
 INTEGER, POINTER :: NodeIndexes(:)
 
-INTEGER :: n,i,j,k,cont,nb_surf,nb_vert,io,nb_day,it,day,YearDay,nb_jour,first_day,nb_line,i1,i2,nx,ny
+INTEGER :: n,i,j,k,cont,nb_surf,nb_vert,io,nb_day,it,day,YearDay,nb_jour,first_day,nb_line,i1,i2,nx,ny,nxDEM,nyDEM
 
 REAL(KIND=dp) :: f, z, deg_pos,accu,melt_local, temp_10m,rain,t_simu,ksnow,kice,k0,T,dt
 REAL(KIND=dp) :: z_precip,grad_accu,grad,z_temp,seuil_precip,albedo_snow,albedo_ice,Rad_fact,alpha
@@ -41,7 +41,7 @@ LOGICAL :: OutputFirn,OutputDens,OutputMelting,OutputAccumulation,Execute_steady
 LOGICAL :: OutputRefreeze,OutputRaining,OutputPotRad,TransientMB,MaskRelief,Obstacle,AccuCorrectionMask
 
 SAVE first_time,nb_surf,nb_vert,TempAirMoy,nb_day,DEMReliefRes,AccuCorrectionMask,&
-&PrecipData,Precip,PotRadNodes,FirnNodes,TransientMB,Execute_steady,MaskAccu,MaskRelief,DEMRelief
+&PrecipData,Precip,PotRadNodes,FirnNodes,TransientMB,Execute_steady,MaskAccu,MaskRelief,DEMRelief,nxDEM,nyDEM
 
 ! Read the Principal variable of the solver 
 MB => VariableGet( Model % Variables, 'Mass Balance', UnFoundFatal=UnFoundFatal)
@@ -162,17 +162,17 @@ IF (first_time) THEN
     END DO
     CLOSE(1)
 	
-	nx=1
-	DO WHILE (DEMRelief_l(nx,2)==DEMRelief_l(nx+1,2))
-		nx=nx+1
+	nxDEM=1
+	DO WHILE (DEMRelief_l(nxDEM,2)==DEMRelief_l(nxDEM+1,2))
+		nxDEM=nxDEM+1
 	ENDDO
-	ny=nb_line/nx
+	nyDEM=nb_line/nxDEM
 	
-	ALLOCATE(DEMRelief(ny,nx,3))
+	ALLOCATE(DEMRelief(nyDEM,nxDEM,3))
 
     cont=0
-    DO i=1,ny
-      DO j=1,nx
+    DO i=1,nyDEM
+      DO j=1,nxDEM
         cont=cont+1
         DEMRelief(i,j,1)=DEMRelief_l(cont,1)
         DEMRelief(i,j,2)=DEMRelief_l(cont,2)
@@ -232,7 +232,7 @@ IF (first_time) THEN
     k=floor((x-Mask(1,1,1))/MaskRes)+1
     j=floor((y-Mask(1,1,2))/MaskRes)+1
 
-    IF ((j<=1).or.(j>=190).or.(k<=1).or.(k>=223)) THEN
+    IF ((j<=1).or.(j>=nx).or.(k<=1).or.(k>=ny)) THEN
       MaskAccu(n)=1.0
     ELSE
       MaskAccu(n)=Mask(j,k,3)*(Mask(j,k+1,1)-x)*(Mask(j+1,k,2)-y)+Mask(j,k+1,3)*(x-Mask(j,k,1))&
@@ -327,7 +327,7 @@ DO n=1,model % NumberOfNodes
             i1=floor((x_ray-DEMRelief(1,1,1))/DEMReliefRes)+1
             i2=floor((y_ray-DEMRelief(1,1,2))/DEMReliefRes)+1
 
-            IF ((i2<=1).or.(i2>=109).or.(i1<=1).or.(i1>=90)) THEN
+            IF ((i2<=1).or.(i2>=nyDEM).or.(i1<=1).or.(i1>=nxDEM)) THEN
 
             ELSE
               zDEM=DEMRelief(i2,i1,3)*(DEMRelief(i2,i1+1,1)-x_ray)*(DEMRelief(i2+1,i1,2)-y_ray)+ &
