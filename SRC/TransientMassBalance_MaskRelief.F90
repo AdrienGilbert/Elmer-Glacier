@@ -232,7 +232,7 @@ IF (first_time) THEN
     k=floor((x-Mask(1,1,1))/MaskRes)+1
     j=floor((y-Mask(1,1,2))/MaskRes)+1
 
-    IF ((j<=1).or.(j>=nx).or.(k<=1).or.(k>=ny)) THEN
+    IF ((j<=1).or.(j>=ny).or.(k<=1).or.(k>=nx)) THEN
       MaskAccu(n)=1.0
     ELSE
       MaskAccu(n)=Mask(j,k,3)*(Mask(j,k+1,1)-x)*(Mask(j+1,k,2)-y)+Mask(j,k+1,3)*(x-Mask(j,k,1))&
