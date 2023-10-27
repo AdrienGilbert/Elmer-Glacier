@@ -166,23 +166,48 @@ IF (first_time) THEN
 	DO WHILE (DEMRelief_l(nxDEM,2)==DEMRelief_l(nxDEM+1,2))
 		nxDEM=nxDEM+1
 	ENDDO
+	
+	nyDEM=1
+	DO WHILE (DEMRelief_l(nyDEM,1)==DEMRelief_l(nyDEM+1,1))
+		nyDEM=nyDEM+1
+	ENDDO
+		
+		
 	nyDEM=nb_line/nxDEM
 	
-	ALLOCATE(DEMRelief(nyDEM,nxDEM,3))
-
-    cont=0
-    DO i=1,nyDEM
-      DO j=1,nxDEM
-        cont=cont+1
-        DEMRelief(i,j,1)=DEMRelief_l(cont,1)
-        DEMRelief(i,j,2)=DEMRelief_l(cont,2)
-        DEMRelief(i,j,3)=DEMRelief_l(cont,3)
-      END DO
-    END DO
+	IF (nxDEM==1) THEN
+		nxDEM=nb_line/nyDEM
+		ALLOCATE(DEMRelief(nyDEM,nxDEM,3))
+		cont=0
+		DO j=1,nxDEM
+			DO i=1,nyDEM
+			cont=cont+1
+			DEMRelief(i,j,1)=DEMRelief_l(cont,1)
+			DEMRelief(i,j,2)=DEMRelief_l(cont,2)
+			DEMRelief(i,j,3)=DEMRelief_l(cont,3)
+			END DO
+		END DO
+	ELSE
+		nyDEM=nb_line/nxDEM
+		ALLOCATE(DEMRelief(nyDEM,nxDEM,3))
+		cont=0
+		DO i=1,nyDEM
+			DO j=1,nxDEM
+			cont=cont+1
+			DEMRelief(i,j,1)=DEMRelief_l(cont,1)
+			DEMRelief(i,j,2)=DEMRelief_l(cont,2)
+			DEMRelief(i,j,3)=DEMRelief_l(cont,3)
+			END DO
+		END DO
+	ENDIF
   
-    DEMReliefRes=abs(DEMRelief(1,1,1)-DEMRelief(1,2,1))
+  
+  DEMReliefRes=abs(DEMRelief(1,1,1)-DEMRelief(1,2,1))
 
-  END IF
+ ENDIF
+  
+  
+  
   
   IF (AccuCorrectionMask) THEN
   
@@ -210,18 +235,44 @@ IF (first_time) THEN
 	ENDDO
 	ny=nb_line/nx
 	
-	ALLOCATE(Mask(ny,nx,3))
-
-  cont=0
-  DO i=1,ny
-    DO j=1,nx
-      cont=cont+1
-
-      Mask(i,j,1)=Mask_l(cont,1)
-      Mask(i,j,2)=Mask_l(cont,2)
-      Mask(i,j,3)=Mask_l(cont,3)
-    END DO
-  END DO
+	nx=1
+	DO WHILE (Mask_l(nx,2)==Mask_l(nx+1,2))
+		nx=nx+1
+	ENDDO
+	
+	ny=1
+	DO WHILE (Mask_l(ny,1)==Mask_l(ny+1,1))
+		ny=ny+1
+	ENDDO
+		
+		
+	ny=nb_line/nx
+	
+	IF (nx==1) THEN
+		nx=nb_line/ny
+		ALLOCATE(Mask(ny,nx,3))
+		cont=0
+		DO j=1,nx
+			DO i=1,ny
+			cont=cont+1
+			Mask(i,j,1)=Mask_l(cont,1)
+			Mask(i,j,2)=Mask_l(cont,2)
+			Mask(i,j,3)=Mask_l(cont,3)
+			END DO
+		END DO
+	ELSE
+		ny=nb_line/nx
+		ALLOCATE(Mask(ny,nx,3))
+		cont=0
+		DO i=1,ny
+			DO j=1,nx
+			cont=cont+1
+			Mask(i,j,1)=Mask_l(cont,1)
+			Mask(i,j,2)=Mask_l(cont,2)
+			Mask(i,j,3)=Mask_l(cont,3)
+			END DO
+		END DO
+	ENDIF
   
   MaskRes=abs(Mask(1,1,1)-Mask(1,2,1))
 
