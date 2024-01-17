@@ -55,15 +55,16 @@
 
       TYPE(Variable_t),POINTER :: SMBVar,HVar,BedVar,ZsVar,ZsLoads,DzDtVar,EVar,IceMask,MassBalance
       INTEGER,POINTER :: Permutation(:)
-	  TYPE(ValueList_t), POINTER :: SolverParams
-	  REAL (KIND=DP), POINTER :: AltRange(:,:)
+      TYPE(ValueList_t), POINTER :: SolverParams
+      REAL (KIND=DP), POINTER :: AltRange(:,:)
 
       REAL(KIND=dp) :: Volume,Vchange
       REAL(KIND=dp) :: TotalArea,AblaArea,AccuArea
       REAL(KIND=dp) :: TotalSMB,AblaSMB,AccuSMB
-      REAL(KIND=dp) :: Hfront,XFront,YFront,XRefFront,YRefFront
+      REAL(KIND=dp) :: Hfront,XFront,YFront
+      REAL(KIND=dp), SAVE :: XRefFront,YRefFront
       REAL(KIND=dp) :: ZsLoadsFlux
-	
+
       REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: NodeArea
       REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: LocalArea
       REAL (KIND=dp), ALLOCATABLE, DIMENSION(:),SAVE :: NodalH,NodalBed,MinH,TotalSMBAlt,AreaAlt,AltitudeBin
@@ -73,7 +74,7 @@
 
       INTEGER :: i
       INTEGER :: ierr
-	  INTEGER, SAVE :: Nbin
+      INTEGER, SAVE :: Nbin
       INTEGER,PARAMETER :: NVal=13
       INTEGER, PARAMETER :: io=12
       INTEGER,PARAMETER :: DIM=3 !dimension of the pb restricted to 3 currently
@@ -83,12 +84,11 @@
       LOGICAL,SAVE :: Firsttime=.TRUE.
 
       CHARACTER(LEN=MAX_NAME_LEN) :: SolverName='Scalar_OUTPUT_Glacier'
-      CHARACTER(LEN=MAX_NAME_LEN),SAVE :: OUTPUT_FName
+      CHARACTER(LEN=MAX_NAME_LEN),SAVE :: OUTPUT_FName, str
       CHARACTER(LEN=MAX_NAME_LEN),ALLOCATABLE,SAVE :: ValueNames(:)
 
       CALL GET_VARIABLES()
-	  
-	  
+  
       IF (Firsttime.OR.Solver%Mesh%Changed) THEN
 
         IF (.NOT.ASSOCIATED(Solver%Variable)) & 
@@ -104,7 +104,7 @@
 
        !## DO SOME ALLOCATION
         CALL DO_ALLOCATION(Firsttime,Nbin)
-		
+
        !## Name of Saved variables
         ValueNames(1)='Volume'
         ValueNames(2)='Volume Change'
@@ -118,35 +118,33 @@
         ValueNames(8)='SMB Accumulation'
         ValueNames(9)='Residual Flux'
 		
-		DO i=1,size(AltitudeBin,1)
-			ValueNames(10+(i-1)*3)='Altitude bin'
-			ValueNames(11+(i-1)*3)='SMBAlt Tot'
-			ValueNames(12+(i-1)*3)='AreaAlt'
-		ENDDO
+        SolverParams=>GetSolverParams(Solver)
+        AltRange => ListGetConstRealArray(SolverParams,'SMB altitude Range')
+        AltitudeBin= (/(i, i=floor(AltRange(1,1)),floor(AltRange(2,1)), 200)/)
 
+        DO i=1,size(AltitudeBin,1)
+           write (str, *) AltitudeBin(i)
+           ValueNames(10+(i-1)*3)='Altitude bin '//trim(str)
+           ValueNames(11+(i-1)*3)='SMBAlt Tot '//trim(str)
+           ValueNames(12+(i-1)*3)='AreaAlt '//trim(str)
+        ENDDO
 
         ValueNames(9+3*size(AltitudeBin,1)+1)='Front Elevation'
         ValueNames(9+3*size(AltitudeBin,1)+2)='X Front'
         ValueNames(9+3*size(AltitudeBin,1)+3)='Y Front'
         ValueNames(9+3*size(AltitudeBin,1)+4)='Front Distance'
-		
-		
+      
+        
+        XRefFront = GetConstReal(SolverParams,'XRefFrontPosition',FoundXRef)
+        YRefFront = GetConstReal(SolverParams,'YRefFrontPosition',FoundYRef)
 
         IF (Firsttime) CALL INIT_OUTPUT_FILE(OUTPUT_FName)
         IF (Firsttime) CALL COMPUTE_NodeArea(NodeArea)
         Firsttime=.FALSE.          
       END IF
 	  
-      SolverParams=>GetSolverParams(Solver)
-      XRefFront = GetConstReal(SolverParams,'XRefFrontPosition',FoundXRef)
-      YRefFront = GetConstReal(SolverParams,'YRefFrontPosition',FoundYRef)
-	  
-	  AltRange => ListGetConstRealArray(SolverParams,'SMB altitude Range')
-	  
-	  AltitudeBin= (/(i, i=floor(AltRange(1,1)),floor(AltRange(2,1)), 200)/)
-	  
-	  CALL BODY_INTEGRATION(Volume,TotalArea,AblaARea,AccuArea,TotalSMB, &
-               AblaSMB,AccuSMB,Hfront,XFront,YFront,ZsLoadsFlux,Vchange,TotalSMBAlt,AreaAlt,AltitudeBin) 
+      CALL BODY_INTEGRATION(Volume,TotalArea,AblaARea,AccuArea,TotalSMB, &
+           AblaSMB,AccuSMB,Hfront,XFront,YFront,ZsLoadsFlux,Vchange,TotalSMBAlt,AreaAlt,AltitudeBin) 
 
       Val(1)=Volume
       Val(2)=Vchange
@@ -160,31 +158,30 @@
       Val(8)=AccuSMB
       Val(9)= ZsLoadsFlux
 	  
-	  DO i=1,size(AltitudeBin,1)
-			Val(10+(i-1)*3)=AltitudeBin(i)
-			Val(11+(i-1)*3)=TotalSMBAlt(i)
-			Val(12+(i-1)*3)=AreaAlt(i)
-	  ENDDO
+      DO i=1,size(AltitudeBin,1)
+         Val(10+(i-1)*3)=AltitudeBin(i)
+         Val(11+(i-1)*3)=TotalSMBAlt(i)
+         Val(12+(i-1)*3)=AreaAlt(i)
+      ENDDO
 	
       Val(9+3*size(AltitudeBin,1)+1)= Hfront
       Val(9+3*size(AltitudeBin,1)+2)= Xfront
       Val(9+3*size(AltitudeBin,1)+3)= Yfront
 
       IF (ParEnv % PEs > 1 ) THEN
-         
         DO i=1,9
            CALL MPI_ALLREDUCE(Val(i),ParVal(i),1,&
                        MPI_DOUBLE_PRECISION,MPI_SUM,ELMER_COMM_WORLD,ierr)					  					  
         END DO
 					   
-		DO i=10,9+3*size(AltitudeBin,1)
-			IF (mod(i,3)==1) THEN
-				ParVal(i)=Val(i)
-			ELSE
-				CALL MPI_ALLREDUCE(Val(i),ParVal(i),1,&
+        DO i=10,9+3*size(AltitudeBin,1)
+           IF (mod(i,3)==1) THEN
+              ParVal(i)=Val(i)
+           ELSE
+              CALL MPI_ALLREDUCE(Val(i),ParVal(i),1,&
                        MPI_DOUBLE_PRECISION,MPI_SUM,ELMER_COMM_WORLD,ierr)
-			ENDIF
-		END DO			   
+           ENDIF
+        END DO			   
 
         CALL MPI_ALLREDUCE(Val(9+3*size(AltitudeBin,1)+1),ParVal(9+3*size(AltitudeBin,1)+1),1,&
                        MPI_DOUBLE_PRECISION,MPI_MIN,ELMER_COMM_WORLD,ierr)
@@ -203,18 +200,19 @@
 		
       END IF
 	  
-	  if (FoundYRef.and.FoundYRef) then
-		Val(9+3*size(AltitudeBin,1)+4)=sqrt((Val(9+3*size(AltitudeBin,1)+2)-XRefFront)**2+(Val(9+3*size(AltitudeBin,1)+3)-YRefFront)**2)
-	  else
-		Val(9+3*size(AltitudeBin,1)+4)=0.0
-	  endif
+      IF (FoundYRef.and.FoundYRef) THEN
+         Val(9+3*size(AltitudeBin,1)+4)= &
+           sqrt((Val(9+3*size(AltitudeBin,1)+2)-XRefFront)**2+(Val(9+3*size(AltitudeBin,1)+3)-YRefFront)**2)
+      ELSE
+         Val(9+3*size(AltitudeBin,1)+4)=0.0
+      ENDIF
 		
       IF ((ParEnv % PEs > 1 ).AND.(ParEnv % MyPe.NE.0)) RETURN
 
       IF( Solver % TimesVisited > 0 ) THEN
-        OPEN(io,file=TRIM(OUTPUT_FName),position='append')
+         OPEN(io,file=TRIM(OUTPUT_FName),position='append')
       ELSE
-        OPEN(io,file=TRIM(OUTPUT_FName))
+         OPEN(io,file=TRIM(OUTPUT_FName))
       END IF
 
       WRITE(io,'(ES22.12E3)',advance='no') GetTime()
@@ -228,31 +226,31 @@
 
       SUBROUTINE DO_ALLOCATION(Firsttime,Nbin)
       LOGICAL,INTENT(IN) :: Firsttime
-	  LOGICAL :: Found
+      LOGICAL :: Found
       INTEGER :: M
       INTEGER :: N
-	  INTEGER,intent(out) :: Nbin
-	  REAL (KIND=DP), POINTER :: AltRange(:,:)
-	  TYPE(ValueList_t), POINTER :: SolverParams
+      INTEGER,intent(out) :: Nbin
+      REAL (KIND=DP), POINTER :: AltRange(:,:)
+      TYPE(ValueList_t), POINTER :: SolverParams
 	  
-         IF (.NOT.Firsttime) &
+      IF (.NOT.Firsttime) &
             DEALLOCATE(NodalH,NodalBed,NodalZs,MinH,NodalSMB,NodalDzDt,&
                       LocalArea, &
                       Basis,dBasisdx,&
                       Val,ParVal,ValueNames,&
                       NodeArea,TotalSMBAlt,AreaAlt,AltitudeBin)
-          N=Model % Mesh % NumberOfNodes
-          M=Model % MaxElementNodes
+       N=Model % Mesh % NumberOfNodes
+       M=Model % MaxElementNodes
 		  
-		  SolverParams=>GetSolverParams(Solver)
-		  AltRange => ListGetConstRealArray(SolverParams,'SMB altitude Range',Found)
+       SolverParams=>GetSolverParams(Solver)
+       AltRange => ListGetConstRealArray(SolverParams,'SMB altitude Range',Found)
 		  
-		  IF (.NOT.Found) &
+       IF (.NOT.Found) &
             CALL FATAL(SolverName,'SMB altitude Range should be provided in scalar output solver')
-		  
-		  Nbin = floor((AltRange(2,1)-AltRange(1,1))/200)+1
-		  
-		  ALLOCATE(Basis(M),&
+
+       Nbin = floor((AltRange(2,1)-AltRange(1,1))/200)+1
+ 
+       ALLOCATE(Basis(M),&
                    MinH(M),&
                    dBasisdx(M,3),&
                    NodalH(M),NodalZs(M),NodalBed(M),&
@@ -316,22 +314,22 @@
        ZsLoads => VariableGet(Solver%Mesh%Variables,'Zs Top Loads',UnfoundFatal=.TRUE.)
 
        DzDtVar => VariableGet(Solver%Mesh%Variables,'Zs Top Velocity',UnfoundFatal=.TRUE.)
-	   
-	   SMBVar => VariableGet(Solver%Mesh%Variables,'Mass Balance',UnfoundFatal=.TRUE.)
+  
+       SMBVar => VariableGet(Solver%Mesh%Variables,'Mass Balance',UnfoundFatal=.TRUE.)
 
        Permutation => Solver%Variable%Perm
 
        PVarName = ListGetString(SolverParams,'Passive Variable Name',Found)
-	   
-	   IceMask => VariableGet(Solver%Mesh%Variables,'IcyMask',UnfoundFatal=.TRUE.)
-	   
+   
+       IceMask => VariableGet(Solver%Mesh%Variables,'IcyMask',UnfoundFatal=.TRUE.)
+   
        IF (Found) THEN
-        EVar => VariableGet(Solver%Mesh%Variables,TRIM(PVarName),UnFoundFatal=.TRUE.)
-        IF (EVar % Type .NE. Variable_on_elements) &
-          CALL FATAL(TRIM(SolverName),'Passive Variable should be on elements')
-        EVar % Values = +1._dp
+          EVar => VariableGet(Solver%Mesh%Variables,TRIM(PVarName),UnFoundFatal=.TRUE.)
+          IF (EVar % Type .NE. Variable_on_elements) &
+             CALL FATAL(TRIM(SolverName),'Passive Variable should be on elements')
+          EVar % Values = +1._dp
        ELSE
-         EVar => NULL()
+          EVar => NULL()
        END IF
 
       END SUBROUTINE GET_VARIABLES
@@ -349,10 +347,9 @@
       INTEGER :: t,i
       LOGICAL :: stat
 
-
       NodeArea=0._dp
 
-      Do t=1,GetNOFActive()
+      DO t=1,GetNOFActive()
 
          Element => GetActiveElement(t)
          n = GetElementNOFNodes(Element)
@@ -360,21 +357,22 @@
          CALL GetElementNodes( ElementNodes, Element )
          ElementNodes % z =0._dp
 
-
          IntegStuff = GaussPoints( Element )
 
-         Do i=1,IntegStuff % n
+         DO i=1,IntegStuff % n
             U = IntegStuff % u(i)
             V = IntegStuff % v(i)
-            W = IntegStuff % w(i)
+            ! W = IntegStuff % w(i) 
+            ! We need the area projected on the horizontal plane
+            W = 0.0
             stat = ElementInfo(Element,ElementNodes,U,V,W,SqrtElementMetric, &
                         Basis,dBasisdx )
 
             NodeArea(Permutation(Indexes(1:n)))=NodeArea(Permutation(Indexes(1:n)))+&
                 SqrtElementMetric*IntegStuff % s(i) * Basis(1:n)
 
-         End do
-      End do
+         END DO
+      END DO
       IF (ParEnv % PEs > 1 ) CALL ParallelSumVector( Solver % Matrix, NodeArea, 0 )
   
       END SUBROUTINE COMPUTE_NodeArea
@@ -386,8 +384,8 @@
                        AblaArea,AccuArea,TotalSMB,AblaSMB,AccuSMB,&
                        Hfront,Xfront,Yfront,ZsLoadsFlux,Vchange
 					   
-	  REAL(KIND=dp),dimension(:),INTENT(OUT) :: TotalSMBAlt,AreaAlt
-	  REAL(KIND=dp),dimension(:),INTENT(IN) :: AltitudeBin
+      REAL(KIND=dp),dimension(:),INTENT(OUT) :: TotalSMBAlt,AreaAlt
+      REAL(KIND=dp),dimension(:),INTENT(IN) :: AltitudeBin
 
       REAL(KIND=dp),parameter :: Fsmall=100.0*EPSILON(1.0)
 
@@ -396,14 +394,12 @@
       TYPE(ValueList_t), POINTER :: Material,BodyForce
       TYPE(GaussIntegrationPoints_t) :: IntegStuff
       TYPE(Nodes_t),SAVE :: ElementNodes
-	  TYPE(ValueList_t), POINTER :: SolverParams
-      
+      TYPE(ValueList_t), POINTER :: SolverParams
 
       REAL(KIND=dp) :: U,V,W,SqrtElementMetric
       REAL(KIND=dp) :: cellarea,XRefFront,YRefFront
       REAL(KIND=dp) :: HAtIP,SMBAtIP
       REAL(KIND=dp) :: s
-	  
 
       LOGICAL :: IceFree
       LOGICAL :: stat
@@ -416,7 +412,6 @@
       INTEGER :: ne, nf
 
       ne=GetNOFActive()
-
  
       Volume=0._dp
       
@@ -428,8 +423,8 @@
       AblaSMB = 0._dp
       AccuSMB = 0._dp
 	  
-	  TotalSMBAlt = 0._dp
-	  AreaAlt = 0._dp
+      TotalSMBAlt = 0._dp
+      AreaAlt = 0._dp
 	      
       Hfront = Huge(1.0)
 
@@ -437,10 +432,8 @@
       Vchange = 0._dp
 	  
 	  
-	  DO t = 1,ne
-
+      DO t = 1,ne
          Element => GetActiveElement(t)
-
 
          n = GetElementNOFNodes(Element)
          NodeIndexes => Element % NodeIndexes
@@ -469,7 +462,6 @@
          NodalSMB(1:n) = SMBVar%Values(SMBVar%Perm(NodeIndexes(1:n)))
          !NodalSMB(1:n) = ListGetReal(BodyForce, 'Zs Top Accumulation Flux 3',n,NodeIndexes,UnfoundFatal=.TRUE.)
 
-
         ! CELL IS NOT ACTIVE ALL H VALUES BELOW MinH Value
          IceFree=.FALSE.
          ! IF (ALL((NodalH(1:n)-MinH(1:n)).LE.Fsmall).AND.ALL(NodalSMB(1:n).LT.0._dp)) IceFree=.TRUE.
@@ -483,64 +475,62 @@
          DO i=1,IntegStuff % n
             U = IntegStuff % u(i)
             V = IntegStuff % v(i)
-            W = IntegStuff % w(i)
+            ! W = IntegStuff % w(i)
+            ! We need the area projected on the horizontal plane
+            W = 0.0
 
             stat = ElementInfo(Element,ElementNodes,U,V,W,SqrtElementMetric, &
                         Basis,dBasisdx )
             s=SqrtElementMetric*IntegStuff % s(i)
-           ! cell area
-           cellarea=cellarea+s
-           ! the area seen by each node
-           LocalArea(1:n)=LocalArea(1:n)+ s * Basis(1:n)
+            ! cell area
+            cellarea=cellarea+s
+            ! the area seen by each node
+            LocalArea(1:n)=LocalArea(1:n)+ s * Basis(1:n)
 
-           IF (IceFree) CYCLE
+            IF (IceFree) CYCLE
 
-           ! Integrate H
-           HAtIP=SUM(NodalH(1:n)*Basis(1:n))
-           Volume=Volume+HAtIP*s
-           Vchange=Vchange+SUM(NodalDzDt(1:n)*Basis(1:n))*s
+            ! Integrate H
+            HAtIP=SUM(NodalH(1:n)*Basis(1:n))
+            Volume=Volume+HAtIP*s
+            Vchange=Vchange+SUM(NodalDzDt(1:n)*Basis(1:n))*s
 
-           SMBAtIP=SUM(NodalSMB(1:n)*Basis(1:n))
-		   
-		   
-		   DO k=1,size(AltitudeBin,1)
-		      IF (ALL(NodalZs(1:n)<AltitudeBin(k)+100).and.(ALL(NodalZs(1:n)>AltitudeBin(k)-100))) THEN
-		   		TotalSMBAlt(k) = TotalSMBAlt(k) + SMBAtIP*s
-				AreaAlt(k) = AreaAlt(k) + s
-			  ENDIF		   
-		   ENDDO
+            SMBAtIP=SUM(NodalSMB(1:n)*Basis(1:n))
+   
+            DO k=1,size(AltitudeBin,1)
+               IF (ALL(NodalZs(1:n)<AltitudeBin(k)+100).and.(ALL(NodalZs(1:n)>AltitudeBin(k)-100))) THEN
+                  TotalSMBAlt(k) = TotalSMBAlt(k) + SMBAtIP*s
+                  AreaAlt(k) = AreaAlt(k) + s
+               ENDIF
+            ENDDO
 
-           IF (SMBAtIP>0.0_dp) THEN
-             AccuSMB = AccuSMB + SMBAtIP*s
-             AccuArea = AccuArea + s
-           ELSE
-             AblaSMB = AblaSMB + SMBAtIP*s
-             AblaArea = AblaArea + s
-           END IF
+            IF (SMBAtIP>0.0_dp) THEN
+               AccuSMB = AccuSMB + SMBAtIP*s
+               AccuArea = AccuArea + s
+            ELSE
+               AblaSMB = AblaSMB + SMBAtIP*s
+               AblaArea = AblaArea + s
+            END IF
          
-		 TotalArea = TotalArea + s
-         TotalSMB = TotalSMB + SMBAtIP*s
-		 
-		 END DO
+            TotalArea = TotalArea + s
+            TotalSMB = TotalSMB + SMBAtIP*s
 
-         ! find the front elevation (min z for Not IceFree)
-         IF (.NOT.IceFree) THEN
-           Do i=1,n
-             ZsLoadsFlux = ZsLoadsFlux + &
-               ZsLoads%Values(ZsLoads%Perm(NodeIndexes(i)))*LocalArea(i)/NodeArea(Permutation(NodeIndexes(i)))
-           End do
+          END DO
 
-           IF (ANY(NodalZs(1:n)<Hfront)) THEN
-             Hfront = MINVAL(NodalZs(1:n))
-             nf = MINLOC(NodalZs(1:n), DIM=1)
-             Xfront = Solver % Mesh % Nodes % x(NodeIndexes(nf))
-             Yfront = Solver % Mesh % Nodes % y(NodeIndexes(nf))
+          ! find the front elevation (min z for Not IceFree)
+          IF (.NOT.IceFree) THEN
+             DO i=1,n
+                ZsLoadsFlux = ZsLoadsFlux + &
+                ZsLoads%Values(ZsLoads%Perm(NodeIndexes(i)))*LocalArea(i)/NodeArea(Permutation(NodeIndexes(i)))
+             END DO
 
-           END IF
-         END IF
-      END DO 
+             IF (ANY(NodalZs(1:n)<Hfront)) THEN
+                Hfront = MINVAL(NodalZs(1:n))
+                nf = MINLOC(NodalZs(1:n), DIM=1)
+                Xfront = Solver % Mesh % Nodes % x(NodeIndexes(nf))
+                Yfront = Solver % Mesh % Nodes % y(NodeIndexes(nf))
+             END IF
+          END IF
+       END DO 
       END SUBROUTINE BODY_INTEGRATION
-
-     
 
       END
